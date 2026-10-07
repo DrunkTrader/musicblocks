@@ -104,9 +104,32 @@ let server;
 let shuttingDown = false;
 
 function listen() {
-    server = app.listen(PORT, HOST, () => {
-        console.log(`Music Blocks running at http://${HOST}:${PORT}/`);
-        console.log("Compression enabled");
+    if (server) return Promise.resolve(server);
+
+    return new Promise((resolve, reject) => {
+        server = app.listen(PORT, HOST, () => {
+            console.log(`Music Blocks running at http://${HOST}:${PORT}/`);
+            console.log("Compression enabled");
+            resolve(server);
+        });
+        server.once("error", error => {
+            server = null;
+            reject(error);
+        });
+    });
+}
+
+function closeServer() {
+    if (!server) return Promise.resolve();
+
+    const runningServer = server;
+    server = null;
+    if (typeof runningServer.closeIdleConnections === "function") {
+        runningServer.closeIdleConnections();
+    }
+
+    return new Promise(resolve => {
+        runningServer.close(() => resolve());
     });
 }
 
@@ -116,10 +139,7 @@ function shutdown(exitCode = 0) {
 
     if (server) {
         console.log("Shutting down server...");
-        if (typeof server.closeIdleConnections === "function") {
-            server.closeIdleConnections();
-        }
-        server.close(() => {
+        closeServer().then(() => {
             console.log("Server closed");
             process.exit(exitCode);
         });
@@ -133,10 +153,15 @@ function shutdown(exitCode = 0) {
 }
 
 if (require.main === module) {
-    listen();
+    listen().catch(error => {
+        console.error("Failed to start server:", error);
+        process.exit(1);
+    });
 
     process.on("SIGTERM", () => shutdown(0));
     process.on("SIGINT", () => shutdown(0));
 }
 
 module.exports = app;
+module.exports.startServer = listen;
+module.exports.closeServer = closeServer;

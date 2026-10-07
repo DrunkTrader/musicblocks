@@ -1,7 +1,9 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
 
-require("./index.js");
+const server = require("./index.js");
+
+let serverClosed = false;
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -17,18 +19,30 @@ function createWindow() {
         }
     });
 
-    setTimeout(() => {
-        win.loadURL("http://127.0.0.1:3000");
-    }, 1000);
+    win.loadURL("http://127.0.0.1:3000");
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    await server.startServer();
     createWindow();
 
     app.on("activate", () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
         }
+    });
+}).catch(error => {
+    console.error("Failed to start Music Blocks:", error);
+    app.quit();
+});
+
+app.on("before-quit", event => {
+    if (serverClosed) return;
+
+    event.preventDefault();
+    server.closeServer().finally(() => {
+        serverClosed = true;
+        app.quit();
     });
 });
 
