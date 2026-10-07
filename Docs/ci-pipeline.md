@@ -125,10 +125,10 @@ It audits production dependencies at the high-severity threshold.
 
 ## Lighthouse details
 
-`lighthouse-ci.yml` runs Lighthouse measurements for each of the desktop and
-mobile profiles and uploads the reports as workflow artifacts. The configured
-assertions are warnings rather than errors, so a score below the configured
-target is reported but does not itself fail the workflow.
+`lighthouse-ci.yml` runs three Lighthouse measurements for each of the
+desktop and mobile profiles. The configured assertions are warnings rather
+than errors, so a score below the configured target is reported but does not
+itself fail the workflow.
 
 The current warning targets are:
 
@@ -147,6 +147,7 @@ items rather than claims that the workflows are currently failing.
 
 | Priority      | Observation                                                                                                 | Impact                                                                                             | Suggested next step                                                                                                                 |
 | ------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| High          | `lighthouse-ci.yml` executes pull-request code while requesting `pull-requests: write` and `issues: write`. | A code-executing workflow has more permission than the other read-only CI jobs.                    | Review whether comment publication can be isolated into a separate trusted job or reduced to the minimum required permissions.      |
 | Medium        | The build job runs `npm run build --if-present`, but `package.json` does not define a `build` script.       | The job installs dependencies but currently performs no real build or application smoke test.      | Add a supported build command, or rename/rework the job so its checks match its purpose.                                            |
 | Medium        | Lighthouse assertions are warning-only.                                                                     | Performance, accessibility, best-practice, and SEO regressions do not block CI.                    | Agree on stable thresholds and convert selected assertions to errors.                                                               |
 | Low           | Cypress currently runs in Chrome only.                                                                      | Firefox, Edge, and other browser-specific regressions are not covered.                             | Add another browser to the matrix if the additional CI time is acceptable.                                                          |
