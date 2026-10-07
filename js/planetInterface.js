@@ -461,7 +461,7 @@ class PlanetInterface {
                         type: "MB_PLATFORM_COLOR",
                         payload: typeof platformColor !== "undefined" ? platformColor : null
                     },
-                    "*"
+                    window.location.origin
                 );
             } catch (e) {
                 console.debug("Could not push platformColor to Planet iframe:", e);
@@ -488,7 +488,7 @@ class PlanetInterface {
                 }
                 this.iframe.contentWindow.postMessage(
                     { type: "MB_BLOCK_NAMES", payload: nameMap },
-                    "*"
+                    window.location.origin
                 );
             } catch (e) {
                 console.debug("Could not push block names to Planet iframe:", e);

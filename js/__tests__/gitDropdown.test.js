@@ -73,7 +73,8 @@ describe("GitDropdownUI - Complete Git Features Test Suite", () => {
                                         success: true,
                                         repository: msg.repoName
                                     },
-                                    origin: window.location.origin
+                                    origin: window.location.origin,
+                                    source: mockIframe.contentWindow
                                 })
                             );
                         }, 5);
@@ -85,7 +86,8 @@ describe("GitDropdownUI - Complete Git Features Test Suite", () => {
                                         type: "MB_OFFLINE_COMMIT_RESULT",
                                         success: true
                                     },
-                                    origin: window.location.origin
+                                    origin: window.location.origin,
+                                    source: mockIframe.contentWindow
                                 })
                             );
                         }, 5);
@@ -436,6 +438,27 @@ describe("GitDropdownUI - Complete Git Features Test Suite", () => {
 
     // ── 5. Iframe Message Handlers ──────────────────────────────────────────
     describe("Iframe Message Listeners", () => {
+        test("waits for responses from the Planet iframe", async () => {
+            const waiting = gitDropdown._waitForMessage("MB_TEST_RESULT", 100);
+
+            window.dispatchEvent(
+                new MessageEvent("message", {
+                    data: { type: "MB_TEST_RESULT", value: "wrong-source" },
+                    origin: window.location.origin,
+                    source: window
+                })
+            );
+            window.dispatchEvent(
+                new MessageEvent("message", {
+                    data: { type: "MB_TEST_RESULT", value: "planet" },
+                    origin: window.location.origin,
+                    source: mockIframe.contentWindow
+                })
+            );
+
+            await expect(waiting).resolves.toEqual({ type: "MB_TEST_RESULT", value: "planet" });
+        });
+
         test("MB_GIT_STATE updates active repo credentials and syncs menu", () => {
             window.dispatchEvent(
                 new MessageEvent("message", {

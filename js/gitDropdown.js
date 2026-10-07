@@ -201,6 +201,9 @@ class GitDropdownUI {
      * @returns {Promise<MessageEvent>}
      */
     _waitForMessage(type, timeout = 10_000) {
+        const planetIframe = document.getElementById("planet-iframe");
+        const planetIframeWin = planetIframe ? planetIframe.contentWindow : null;
+
         return new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
                 window.removeEventListener("message", handler);
@@ -210,6 +213,7 @@ class GitDropdownUI {
             function handler(e) {
                 // Reject messages from other origins.
                 if (e.origin !== window.location.origin) return;
+                if (!planetIframeWin || e.source !== planetIframeWin) return;
                 if (e.data && e.data.type === type) {
                     clearTimeout(timer);
                     window.removeEventListener("message", handler);
@@ -418,7 +422,7 @@ class GitDropdownUI {
                     tags: [],
                     projectId: null
                 },
-                "*"
+                window.location.origin
             );
 
             try {
@@ -519,7 +523,7 @@ class GitDropdownUI {
                         displayName: displayName,
                         description: description
                     },
-                    "*"
+                    window.location.origin
                 );
             }
 
@@ -559,7 +563,7 @@ class GitDropdownUI {
                         tags: [],
                         projectId: null
                     },
-                    "*"
+                    window.location.origin
                 );
                 try {
                     const result = await this._waitForMessage("MB_OFFLINE_CREATE_RESULT");
@@ -726,7 +730,7 @@ class GitDropdownUI {
                 projectData,
                 commitMessage
             },
-            "*"
+            window.location.origin
         );
 
         try {
@@ -792,7 +796,10 @@ class GitDropdownUI {
         const planetIframe = document.getElementById("planet-iframe");
         if (planetIframe && planetIframe.contentWindow) {
             try {
-                planetIframe.contentWindow.postMessage({ type: "MB_GET_LOCAL_HISTORY" }, "*");
+                planetIframe.contentWindow.postMessage(
+                    { type: "MB_GET_LOCAL_HISTORY" },
+                    window.location.origin
+                );
                 const result = await this._waitForMessage("MB_LOCAL_HISTORY_RESULT", 5000);
                 if (result.data && result.data.length > 0) {
                     // Only include pending (not-yet-synced) drafts — synced ones are
@@ -816,7 +823,10 @@ class GitDropdownUI {
             // If the live fetch failed, also grab cached synced commits as fallback
             if (isOfflineHistory) {
                 try {
-                    planetIframe.contentWindow.postMessage({ type: "MB_GET_LOCAL_HISTORY" }, "*");
+                    planetIframe.contentWindow.postMessage(
+                        { type: "MB_GET_LOCAL_HISTORY" },
+                        window.location.origin
+                    );
                     const result2 = await this._waitForMessage("MB_LOCAL_HISTORY_RESULT", 5000);
                     if (result2.data && result2.data.length > 0) {
                         liveCommits = result2.data
@@ -1525,7 +1535,7 @@ class GitDropdownUI {
                     if (planetIframe && planetIframe.contentWindow) {
                         planetIframe.contentWindow.postMessage(
                             { type: "MB_GET_LOCAL_HISTORY" },
-                            "*"
+                            window.location.origin
                         );
                         const result = await this._waitForMessage("MB_LOCAL_HISTORY_RESULT", 5000);
                         const match = (result.data || []).find(

@@ -126,7 +126,7 @@ class Planet {
                     // rather than the sanitised repo slug.
                     projectName: project ? project.ProjectName || "" : ""
                 },
-                "*"
+                window.location.origin
             );
         } catch (e) {
             console.debug("[Planet] Could not post git state:", e);
@@ -209,7 +209,7 @@ class Planet {
             // Tell the parent window (gitDropdown) that git state is being cleared
             // so it can reset its repo/key tracking and prefetch cache immediately.
             try {
-                window.parent.postMessage({ type: "MB_NEW_PROJECT" }, "*");
+                window.parent.postMessage({ type: "MB_NEW_PROJECT" }, window.location.origin);
             } catch (e) {
                 /* ignore cross-origin */
             }
@@ -285,7 +285,7 @@ class Planet {
         window.addEventListener("message", async e => {
             if (!e.data) return;
             // Only process messages from the same origin (the parent Music Blocks page).
-            if (e.origin !== window.location.origin) return;
+            if (e.origin !== window.location.origin || e.source !== window.parent) return;
 
             // ── Git state sync from gitDropdown ──────────────────────────
             if (e.data.type === "MB_GIT_CREATED") {
@@ -322,7 +322,7 @@ class Planet {
                             success: false,
                             error: "NO_PROJECT_ID"
                         },
-                        "*"
+                        e.origin
                     );
                     return;
                 }
@@ -336,7 +336,7 @@ class Planet {
                         try {
                             e.source?.postMessage(
                                 { type: "MB_OFFLINE_COMMIT_RESULT", ...result },
-                                "*"
+                                e.origin
                             );
                         } catch (_) {
                             /* cross-origin guard */
@@ -360,7 +360,7 @@ class Planet {
                             success: false,
                             error: "NO_PROJECT_OR_MANAGER"
                         },
-                        "*"
+                        e.origin
                     );
                     return;
                 }
@@ -385,11 +385,14 @@ class Planet {
                         this._postGitState(id);
                         if (this.LocalPlanet) this.LocalPlanet.updateProjects();
                     }
-                    e.source?.postMessage({ type: "MB_OFFLINE_CREATE_RESULT", ...result }, "*");
+                    e.source?.postMessage(
+                        { type: "MB_OFFLINE_CREATE_RESULT", ...result },
+                        e.origin
+                    );
                 } catch (err) {
                     e.source?.postMessage(
                         { type: "MB_OFFLINE_CREATE_RESULT", success: false, error: String(err) },
-                        "*"
+                        e.origin
                     );
                 }
                 return;
@@ -408,7 +411,7 @@ class Planet {
                             data: [],
                             isOffline: true
                         },
-                        "*"
+                        e.origin
                     );
                     return;
                 }
@@ -420,7 +423,7 @@ class Planet {
                         data: history,
                         isOffline: true
                     },
-                    "*"
+                    e.origin
                 );
                 return;
             }
