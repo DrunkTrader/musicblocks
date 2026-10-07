@@ -286,7 +286,7 @@ describe("GitDropdownUI - Complete Git Features Test Suite", () => {
                     hashedKey: "secret-key-123",
                     displayName: "My Track"
                 }),
-                "*"
+                window.location.origin
             );
         });
 
@@ -303,7 +303,7 @@ describe("GitDropdownUI - Complete Git Features Test Suite", () => {
                     projectName: "Offline Track",
                     thumbnail: "data:image/png;base64,abc"
                 }),
-                "*"
+                window.location.origin
             );
 
             expect(localStorage.getItem("mbGitRepoName")).toBe("offline-track-456");
@@ -321,7 +321,7 @@ describe("GitDropdownUI - Complete Git Features Test Suite", () => {
                     type: "MB_OFFLINE_CREATE",
                     thumbnail: "data:image/png;base64,abc"
                 }),
-                "*"
+                window.location.origin
             );
         });
 
@@ -415,7 +415,7 @@ describe("GitDropdownUI - Complete Git Features Test Suite", () => {
                     repoName: "my-repo",
                     commitMessage: "Offline snapshot 1"
                 }),
-                "*"
+                window.location.origin
             );
         });
     });
