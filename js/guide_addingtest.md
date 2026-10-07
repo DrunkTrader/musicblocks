@@ -138,29 +138,15 @@ Open `coverage/lcov-report/index.html` in a browser to explore line-by-line cove
 
 > **Note:** The `coverage/` directory is listed in `.gitignore` and should never be committed.
 
-### Current Threshold Policy
+### Current Coverage Policy
 
-The `coverageThreshold` in `jest.config.js` enforces minimum global coverage. If any metric drops below its threshold, `jest --coverage` exits with a non-zero code and the CI build fails.
+`jest.config.js` collects global coverage but does not currently define a fixed
+`coverageThreshold`. `npm test -- --coverage` therefore fails when tests fail,
+not when a percentage falls below a repository-defined floor.
 
-| Metric     | Minimum |
-| ---------- | ------- |
-| Statements | 34 %    |
-| Branches   | 29 %    |
-| Functions  | 41 %    |
-| Lines      | 34 %    |
-
-These thresholds are intentionally kept as a ratchet — they should only go **up** as new tests are added, never down.
-
-### How CI Posts Coverage on PRs
-
-The GitHub Actions workflow (`.github/workflows/pr-jest-tests.yml`) runs on every pull request:
-
-1. Checks out the PR head commit and runs `npm test -- --coverage`.
-2. Reads `coverage/coverage-summary.json` to extract per-metric percentages.
-3. Posts a comment on the PR with the coverage summary and pass/fail status.
-4. If any test fails, the comment lists the failing test files.
-
-You can check the latest coverage numbers directly in the PR comment without downloading the CI logs.
+The CI workflow uploads `coverage/lcov.info` to Codecov when its token is
+available. Fork pull requests still run the Jest suite, but cannot upload to
+Codecov without repository secrets.
 
 ## 🎯 Contribution Guidelines
 

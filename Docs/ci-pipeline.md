@@ -83,8 +83,9 @@ The `ci` workflow runs on Node.js 22 for most checks:
 
 - `commitlint` checks all pull-request commits against the base commit.
 - `lint` runs ESLint and Prettier only on changed `.js` and `.mjs` files.
-- `build` installs dependencies and invokes `npm run build --if-present` on
-  Node.js 20 and 22.
+- `build` installs dependencies on Node.js 20 and 22, starts the Express server,
+  and checks `/healthz`. It is a runtime smoke test; it does not create a bundled
+  production artifact.
 
 ### Jest and coverage
 
@@ -94,18 +95,10 @@ The test job runs:
 npm test -- --coverage --ci
 ```
 
-Jest enforces the global minimums in [`jest.config.js`](../jest.config.js):
-
-| Metric     | Minimum |
-| ---------- | ------: |
-| Statements |     34% |
-| Branches   |     29% |
-| Functions  |     41% |
-| Lines      |     34% |
-
-Coverage is uploaded to Codecov when a token is available. Codecov upload
-failures do not fail the job, while the Jest thresholds still apply to every
-pull request.
+Jest collects coverage according to [`jest.config.js`](../jest.config.js), but
+there is currently no fixed `coverageThreshold`. The test job fails when the
+Jest suite itself fails. Coverage is uploaded to Codecov when a token is
+available; upload failures do not fail the job.
 
 ### Cypress
 
@@ -145,14 +138,14 @@ The detailed timing thresholds and mobile emulation settings are maintained in
 These observations come from the current configuration. They are follow-up
 items rather than claims that the workflows are currently failing.
 
-| Priority      | Observation                                                                                                 | Impact                                                                                             | Suggested next step                                                                                                                 |
-| ------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| High          | `lighthouse-ci.yml` executes pull-request code while requesting `pull-requests: write` and `issues: write`. | A code-executing workflow has more permission than the other read-only CI jobs.                    | Review whether comment publication can be isolated into a separate trusted job or reduced to the minimum required permissions.      |
-| Medium        | The build job runs `npm run build --if-present`, but `package.json` does not define a `build` script.       | The job installs dependencies but currently performs no real build or application smoke test.      | Add a supported build command, or rename/rework the job so its checks match its purpose.                                            |
-| Medium        | Lighthouse assertions are warning-only.                                                                     | Performance, accessibility, best-practice, and SEO regressions do not block CI.                    | Agree on stable thresholds and convert selected assertions to errors.                                                               |
-| Low           | Cypress currently runs in Chrome only.                                                                      | Firefox, Edge, and other browser-specific regressions are not covered.                             | Add another browser to the matrix if the additional CI time is acceptable.                                                          |
-| Low           | Codecov upload is optional for fork pull requests because repository secrets are unavailable there.         | Fork PRs still receive Jest threshold enforcement but may not receive a PR-vs-base Codecov report. | Keep the current behavior documented, or evaluate a tokenless/report-only upload strategy.                                          |
-| Informational | Release deployment is intentionally manual.                                                                 | Releases are tagged and reported, but deployment is not automated.                                 | If deployment policy changes, add build, publish, or deployment steps to the release workflow with explicit permissions and review. |
+| Priority      | Observation                                                                                                 | Impact                                                                          | Suggested next step                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| High          | `lighthouse-ci.yml` executes pull-request code while requesting `pull-requests: write` and `issues: write`. | A code-executing workflow has more permission than the other read-only CI jobs. | Review whether comment publication can be isolated into a separate trusted job or reduced to the minimum required permissions.      |
+| Medium        | CI validates runtime readiness but does not produce a bundled production artifact.                          | Asset generation remains a separate deployment decision.                        | Add and wire one supported asset pipeline if a bundled production release becomes a requirement.                                    |
+| Medium        | Lighthouse assertions are warning-only.                                                                     | Performance, accessibility, best-practice, and SEO regressions do not block CI. | Agree on stable thresholds and convert selected assertions to errors.                                                               |
+| Low           | Cypress currently runs in Chrome only.                                                                      | Firefox, Edge, and other browser-specific regressions are not covered.          | Add another browser to the matrix if the additional CI time is acceptable.                                                          |
+| Low           | Codecov upload is optional for fork pull requests because repository secrets are unavailable there.         | Fork PRs still run Jest but may not receive a Codecov report.                   | Keep the current behavior documented, or evaluate a tokenless/report-only upload strategy.                                          |
+| Informational | Release deployment is intentionally manual.                                                                 | Releases are tagged and reported, but deployment is not automated.              | If deployment policy changes, add build, publish, or deployment steps to the release workflow with explicit permissions and review. |
 
 ## Keeping this page current
 

@@ -133,10 +133,10 @@ jobs:
                   xargs -r npx prettier --check < changed-js-files.txt
 
     # ----------------------------------------------------------------------
-    # Build / smoke test across Node versions
+    # Runtime smoke test across Node versions
     # ----------------------------------------------------------------------
     build:
-        name: Build (Node ${{ matrix.node-version }})
+        name: Runtime smoke test (Node ${{ matrix.node-version }})
         runs-on: ubuntu-latest
         timeout-minutes: 30
         strategy:
@@ -171,11 +171,16 @@ jobs:
                   fi
               shell: bash
 
-            - name: Build project
-              run: npm run build --if-present
+            - name: Start server and check readiness
+              run: |
+                  npm start &
+                  server_pid=$!
+                  trap 'kill "$server_pid"' EXIT
+                  curl --fail --retry 30 --retry-delay 1 --retry-connrefused \
+                      http://127.0.0.1:3000/healthz
 
     # ----------------------------------------------------------------------
-    # Jest unit tests + coverage threshold + Codecov upload
+    # Jest unit tests + coverage report + Codecov upload
     # ----------------------------------------------------------------------
     test:
         name: Jest tests & coverage
@@ -202,16 +207,15 @@ jobs:
                   fi
               shell: bash
 
-            # Coverage thresholds are enforced inside Jest (coverageThreshold in
-            # your Jest config), so this step fails the job if coverage drops
-            # below the configured minimums.
+            # Jest collects coverage for reporting. No fixed coverage threshold is
+            # configured in jest.config.js.
             - name: Run Jest with coverage
               run: npm test -- --coverage --ci
 
-            # Upload to Codecov for the PR-vs-base coverage diff + status check.
+            # Upload coverage to Codecov when a token is available.
             # NOTE: secrets (CODECOV_TOKEN) are NOT available to pull_request runs
-            # originating from forks. The threshold enforcement above still runs
-            # on every PR; only the upload is skipped on forks. fail_ci_if_error
+            # originating from forks. The Jest suite still runs on every PR;
+            # only the upload is skipped on forks. fail_ci_if_error
             # is false so a flaky/absent upload never blocks the PR.
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v5
